@@ -167,6 +167,12 @@ type AppResource struct {
 	// pull-if-absent behavior. Response-only (declared through a compose
 	// import's pull_policy:, not settable here).
 	PullPolicy string `json:"pull_policy,omitempty"`
+	// RegistryCredential mirrors internal/api's appResource.RegistryCredential:
+	// write-only name of a stored registry credential to pull Image with.
+	RegistryCredential *string `json:"registry_credential,omitempty"`
+	// RegistryCredentialID mirrors internal/api's
+	// appResource.RegistryCredentialID: response-only.
+	RegistryCredentialID string `json:"registry_credential_id,omitempty"`
 	// PreviewEnvOverrides mirrors internal/api's
 	// appResource.PreviewEnvOverrides: response-only, set via PUT/DELETE
 	// /api/v1/apps/{name}/preview-env/{key} (SetAppPreviewEnvOverride/

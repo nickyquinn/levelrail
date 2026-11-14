@@ -121,7 +121,12 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	credentialID, _, ok := rt.appRegistryCredentialID(w, r, req.Name, req.Image, req.RegistryCredential)
+	if !ok {
+		return
+	}
 	desired := req.toDesiredService()
+	desired.RegistryCredentialID = credentialID
 	// Required: false for every entry here, since this endpoint has no
 	// { required: true } concept of its own to carry over (that only
 	// ever comes from app.yaml, via internal/deploy's translate.go); the
@@ -252,6 +257,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	// never carried a value in the first place, so there is nothing to
 	// scrub before echoing it.
 	req.VaultEnv = toAppResource(desired).VaultEnv
+	req.RegistryCredential, req.RegistryCredentialID = nil, desired.RegistryCredentialID
 
 	if autoDomain != "" {
 		req.AutoDomain = autoDomain
@@ -274,7 +280,15 @@ func (rt *Router) resolveCreateImage(ctx context.Context, desired *store.Desired
 		return res, nil
 	}
 	tr := deploytrace.NewBuffered()
-	got, err := deploy.ResolveImageTraced(ctx, tr, rt.imageResolver, desired.Image, nil, false, "")
+	var auth *docker.RegistryAuth
+	if desired.RegistryCredentialID != "" {
+		if a, err := rt.registryAuthFor(ctx, desired.RegistryCredentialID); err == nil {
+			auth = a
+		} else {
+			rt.logger.Warn("api: create app: resolve registry auth for digest lookup failed", slog.String("error", err.Error()), slog.String("name", desired.Name))
+		}
+	}
+	got, err := deploy.ResolveImageTraced(ctx, tr, rt.imageResolver, desired.Image, auth, false, "")
 	if err != nil {
 		rt.logger.Warn("api: create app: resolve image failed, deploying it unresolved", slog.String("error", err.Error()), slog.String("name", desired.Name))
 		return res, tr

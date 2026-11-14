@@ -222,6 +222,11 @@ type appResource struct {
 	// Response-only, same reason Command above is: set through a compose
 	// import's pull_policy:, never through this endpoint.
 	PullPolicy string `json:"pull_policy,omitempty"`
+	// RegistryCredential is write-only, by name like app.yaml's build.registryCredential.
+	// On update, omitted keeps the stored credential and "" clears it.
+	RegistryCredential *string `json:"registry_credential,omitempty"`
+	// RegistryCredentialID is response-only; empty means an anonymous pull.
+	RegistryCredentialID string `json:"registry_credential_id,omitempty"`
 	// DependsOn names sibling service keys (store.DesiredService.
 	// DependsOn) this service waits on before the reconciler starts its
 	// own containers, set through app.yaml's dependsOn: or a compose
@@ -326,6 +331,8 @@ func toAppResourceRaw(svc store.DesiredService) appResource {
 		Command:             svc.Command,
 		PullPolicy:          svc.PullPolicy,
 		DependsOn:           svc.DependsOn,
+
+		RegistryCredentialID: svc.RegistryCredentialID,
 	}
 }
 

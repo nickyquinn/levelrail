@@ -376,11 +376,20 @@ func planFromFileImage(f createFlags, key string, svc spec.Service) (createPlan,
 			Replicas:    svc.Replicas,
 			Strategy:    svc.Strategy,
 
-			PublishedPorts: toPublishedPorts(svc.PublishedPorts),
+			PublishedPorts:     toPublishedPorts(svc.PublishedPorts),
+			RegistryCredential: stringPtrOrNil(svc.Build.RegistryCredential),
 		},
 		Volumes: svc.Volumes,
 		Rollout: svc.Rollout,
 	}, nil
+}
+
+// stringPtrOrNil is nil for "", so an unset app.yaml field stays out of the request body.
+func stringPtrOrNil(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }
 
 // planFromFileStatic handles build.type: static services, which cannot go through POST /apps (it requires a port).

@@ -139,6 +139,9 @@ func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 		writeCodedError(w, http.StatusBadRequest, errCodeInvalidImageRef, "image: "+err.Error())
 		return
 	}
+	if !rt.checkStoredCredentialHost(w, r.Context(), name, existing.RegistryCredentialID, req.Image) {
+		return
+	}
 
 	if status, msg := rt.validateRerunOf(r.Context(), name, req.RerunOf); status != 0 {
 		writeError(w, status, msg)

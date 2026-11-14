@@ -62,6 +62,13 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	if !rt.requireWildcardDNS01(w, r, req.Domains) {
 		return
 	}
+	credentialID, credentialSet, credentialOK := rt.appRegistryCredentialID(w, r, name, req.Image, req.RegistryCredential)
+	if !credentialOK {
+		return
+	}
+	if !credentialSet && req.Image != existing.Image && !rt.checkStoredCredentialHost(w, r.Context(), name, existing.RegistryCredentialID, req.Image) {
+		return
+	}
 
 	if eerr := rt.hostPortConflict(r.Context(), name, existing.NodeID, req.HostPort, existing); eerr != nil {
 		writeError(w, eerr.status, eerr.msg)
@@ -105,6 +112,9 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	// always writes this column.
 	desired.Egress = existing.Egress
 	preserveUnsentAppFields(&desired, *existing, req, imageChanged)
+	if credentialSet {
+		desired.RegistryCredentialID = credentialID
+	}
 	deploy.EnsureNextCacheLink(&desired)
 	deploy.EnsureNextCacheCALink(r.Context(), &desired, rt.databases)
 	if imageChanged {
